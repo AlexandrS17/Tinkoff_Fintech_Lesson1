@@ -1,0 +1,106 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_digits
+from sklearn.ensemble import RandomForestClassifier
+
+points = []
+
+# Параметры кластеров
+num_clusters = 3
+cluster_size = 40
+
+# Центры кластеров
+means_x = [1., 1.2, 0.8, ]
+means_y = [0.5, 0.6, 0.5, ]
+
+# Разброс
+std = 0.1
+
+for k in range(num_clusters):
+    for i in range(cluster_size):
+        x_i = np.random.normal(loc=means_x[k], scale=std)
+        y_i = np.random.normal(loc=means_y[k], scale=std)
+        points.append((x_i, y_i))
+
+
+def find_near(coord_point, coord_centr_clasters):
+    p_x, p_y = coord_point[0], coord_point[1]
+    list_of_distance = [((clr[0]-p_x)**2+(clr[1]-p_y)**2) ** (1/2) for clr in coord_centr_clasters]
+    index_your_claster = list_of_distance.index(min(list_of_distance))
+    ans_clstr = coord_centr_clasters[index_your_claster]
+    return ans_clstr
+
+
+def new_centers(points, res, cl):
+    centers = []
+    types_of_points = [[] for _ in range(cl)]
+    for index_point, index_res in enumerate(res):
+        types_of_points[index_res].append(points[index_point])
+
+    for e in types_of_points:
+        centers.append((sum(list(map(lambda x: x[0], e)))/len(e),
+                        sum(list(map(lambda x: x[1], e)))/len(e)))
+
+    return centers
+
+
+def k_means(points, num_clusters):
+    """
+    @param points: список из пар координат точек
+    @param num_clusters: число кластеров, на которое необходимо поделить
+
+    @return: номера кластеров и их центры
+    """
+    num_points = len(points)
+    # Выбираем начальные центры кластеров (просто первые num_clusters точек)
+    centers = points[:num_clusters]
+    # В качестве результата будет массив с номерами кластеров для каждой точки
+    result = [-1] * num_points
+    # Предыдущая копия массива result, чтобы сравнивать, поменялось что-то или нет
+    prev_result = None
+
+
+    # Выведем на экран стартовую ситуацию
+    print("Входные данные")
+    points_x = list(map(lambda x: x[0], points))
+    points_y = list(map(lambda x: x[1], points))
+    plt.scatter(x=points_x, y=points_y)
+    plt.title("Входные данные")
+    plt.show()
+
+    it_num = 1
+
+    # Работаем до тех пор, пока кластеры не перестанут меняться
+    while result != prev_result:
+        prev_result = list(result)
+        # Определяем каждую точку к кластеру
+
+        for i, point in enumerate(points):
+            clstr = find_near(point, centers)
+            type_claster = centers.index(clstr)
+            result[i] = type_claster
+        # print('RES', result) #можно посмотреть результат!
+
+        # Меняем центры кластеров
+
+        centers = new_centers(points, result, num_clusters)
+
+        # Выведем то, что у нас получилось
+        print("Итерация №{}".format(it_num))
+        it_num += 1
+        points_x = list(map(lambda x: x[0], points))
+        points_y = list(map(lambda x: x[1], points))
+        plt.scatter(x=points_x, y=points_y, c=result)
+        plt.title(f'Итерация № {it_num}')
+        plt.show()
+    return result, centers
+
+
+res, centers = k_means(points, 3)
+print("Истинные центры кластеров:")
+for i in range(num_clusters):
+    print("({0:.1f}, {1:.1f})".format(means_x[i], means_y[i]))
+print("Полученные центры кластеров. Порядок может поменяться, а значения могут немного отличаться:")
+for i in range(num_clusters):
+    print("({0:.1f}, {1:.1f})".format(centers[i][0], centers[i][1]))
+
